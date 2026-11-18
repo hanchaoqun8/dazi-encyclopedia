@@ -41,17 +41,17 @@ def write(path, text):
     open(os.path.join(full, "index.html"), "w", encoding="utf-8").write(text)
 
 
-def prefix(lang): return "" if lang == "en" else "/zh"
+def prefix(lang): return "" if lang == "zh" else "/en"
 
 
 def layout(title, desc, content, lang, path, alternate=True):
-    canon = lambda l: DOMAIN + ("" if l == "en" else "/zh") + path
-    hreflang = (f'<link rel="alternate" hreflang="en" href="{canon("en")}">'
-                f'<link rel="alternate" hreflang="zh-Hant" href="{canon("zh")}">'
-                f'<link rel="alternate" hreflang="x-default" href="{canon("en")}">') if alternate else ""
+    canon = lambda l: DOMAIN + ("/en" if l == "en" else "") + path
+    hreflang = (f'<link rel="alternate" hreflang="zh-Hant" href="{canon("zh")}">'
+                f'<link rel="alternate" hreflang="en" href="{canon("en")}">'
+                f'<link rel="alternate" hreflang="x-default" href="{canon("zh")}">') if alternate else ""
     switch = " ".join(
-        f'<a href="{( "" if l=="en" else "/zh") + path}" class="{"active" if l==lang else ""}">'
-        f'{"EN" if l=="en" else "繁"}</a>' for l in LANGS)
+        f'<a href="{("" if l=="zh" else "/en") + path}" class="{"active" if l==lang else ""}">'
+        f'{"繁" if l=="zh" else "EN"}</a>' for l in LANGS)
     return f'''<!DOCTYPE html><html lang="{'en' if lang=='en' else 'zh-Hant'}"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{html.escape(title)}</title><meta name="description" content="{html.escape(desc)}">
