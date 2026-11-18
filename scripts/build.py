@@ -42,6 +42,13 @@ def cat_by_id(cid):
     return CFG["categories"][0]
 
 
+def display_cat(meta, lang):
+    """栏目名；旧标准文章附加原有子分类，保留其分类结构。"""
+    main = cat_by_id(meta.get("category", "varieties")).get("en" if lang == "en" else "zh")
+    sub = meta.get("legacy_category", "")
+    return f"{main} · {sub}" if sub else main
+
+
 def lang_switch(path, lang, alt_exists=True):
     """path 为不含语言前缀的路径，如 /posts/xxx/ 或 /"""
     other = "zh" if lang == "en" else "en"
@@ -226,7 +233,7 @@ def category_grid(lang):
         name = c["en"] if lang=="en" else c["zh"]
         sub = c["en_sub"] if lang=="en" else c["zh_sub"]
         cards.append(f'''<a class="cat-card" href="{prefix(lang)}/category/{c['id']}/">
-<span class="cat-icon">{ {'leaf':'❧','cup':'◡','balance':'⚖','search':'⌕','scroll':'❞','pot':'◊','mountain':'▲'}.get(c['icon'],'❧') }</span>
+<span class="cat-icon">{ {'leaf':'❧','cup':'◡','balance':'⚖','search':'⌕','scroll':'❞','pot':'◊','mountain':'▲','shield':'⛨'}.get(c['icon'],'❧') }</span>
 <h3>{name}</h3><p>{sub}</p></a>''')
     return '<section class="section"><h2 class="sec-title">' + ('Explore by Topic' if lang=="en" else '按主題探索') + '</h2><div class="cat-grid">' + "".join(cards) + "</div></section>"
 
@@ -240,7 +247,7 @@ def featured(posts, lang):
         cover = m.get("cover", "")
         img = f'<img src="/assets/img/{cover}" alt="{html.escape(cover_alt(m, lang))}" loading="lazy">' if cover else ""
         cards.append(f'''<a class="post-card" href="{prefix(lang)}/posts/{p['slug']}/">
-{img}<div class="pc-body"><span class="tag">{cat_by_id(m.get('category','varieties')).get('en' if lang=='en' else 'zh')}</span>
+{img}<div class="pc-body"><span class="tag">{html.escape(display_cat(m, lang))}</span>
 <h3>{html.escape(m.get('title',''))}</h3><p>{html.escape(m.get('description','')[:90])}…</p></div></a>''')
     title = "Latest from the Encyclopedia" if lang=="en" else "百科最新文章"
     return f'<section class="section"><h2 class="sec-title">{title}</h2><div class="post-grid">'+"".join(cards)+"</div></section>"
@@ -393,7 +400,7 @@ def build():
             sub = c["en_sub"] if lang=="en" else c["zh_sub"]
             items = [x for x in posts.get(lang,[]) if x["meta"].get("category")==c["id"]]
             cards = "".join(f'''<a class="post-card" href="{p}/posts/{x['slug']}/"><div class="pc-body">
-<span class="tag">{name}</span><h3>{html.escape(x['meta'].get('title',''))}</h3>
+<span class="tag">{html.escape(display_cat(x['meta'], lang))}</span><h3>{html.escape(x['meta'].get('title',''))}</h3>
 <p>{html.escape(x['meta'].get('description','')[:100])}…</p></div></a>''' for x in items)
             if not cards:
                 cards = '<p class="muted">' + ('Articles in this section are being prepared.' if lang=="en" else '本欄目文章整理中。') + '</p>'
@@ -407,7 +414,7 @@ def build():
             cover_html = (f'<img class="post-cover" src="/assets/img/{cover}" '
                           f'alt="{html.escape(cover_alt(m, lang))}">') if cover else ""
             related = nahang_related(x["slug"], lang, posts)
-            content = (f'<article class="post"><span class="tag">{cat_by_id(m.get("category","varieties")).get("en" if lang=="en" else "zh")}</span>'
+            content = (f'<article class="post"><span class="tag">{html.escape(display_cat(m, lang))}</span>'
                 f'<h1>{html.escape(m.get("title",""))}</h1>{cover_html}<div class="post-body">{body_html}</div>'
                 + related +
                 f'<div class="post-foot"><button class="cta" onclick="openQR()">{"Follow for more" if lang=="en" else "關注更多茶知識"}</button></div></article>')
