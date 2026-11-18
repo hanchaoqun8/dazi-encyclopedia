@@ -11,7 +11,7 @@
   · Title / Description / ALT / 关键词 / 开篇定位句 / 往期内链 全部按固定标准执行。
   · 所有产物先校验后落盘；任一语言不合格 → 整批不写入。
 """
-import os, re, sys, json, random, datetime, urllib.request, urllib.error
+import os, re, sys, json, random, datetime, subprocess, urllib.request, urllib.error
 from opencc import OpenCC
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -53,6 +53,31 @@ def log(level, msg):
     line = f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] {level} {msg}"
     print(line)
     with open(LOG, "a", encoding="utf-8") as f: f.write(line + "\n")
+
+
+def refresh_library():
+    """每日从 new.dazi.uk/knowledge.html 背后的数据文件刷新后备知识库。
+    抓取失败时沿用本地副本，不中断当天其它任务。"""
+    url = "https://new.dazi.uk/data/knowledge.js"
+    try:
+        try:
+            raw = urllib.request.urlopen(urllib.request.Request(
+                url, headers={"User-Agent": "Mozilla/5.0 dazi-dispatch/1.0"}), timeout=40).read().decode("utf-8")
+        except Exception:
+            raw = subprocess.check_output(["curl", "-sL", "--max-time", "40", url]).decode("utf-8")
+        m = re.search(r"window\.__PUER_KNOWLEDGE__\s*=\s*(\{.*\})\s*;?\s*$", raw, re.S)
+        if not m: raise ValueError("找不到 __PUER_KNOWLEDGE__")
+        data = json.loads(m.group(1))
+        items = [{"t": x.get("title", ""), "s": x.get("summary", "")[:400],
+                  "c": x.get("category", ""), "u": x.get("url", "")}
+                 for x in data.get("items", []) if x.get("title")]
+        if len(items) < 100: raise ValueError(f"条目异常偏少 {len(items)}")
+        save_json(KB_PATH, {"meta": {"source": url,
+                                     "source_page": "https://new.dazi.uk/knowledge.html",
+                                     "total": len(items)}, "items": items})
+        log("INFO", f"科普源已刷新：new.dazi.uk/knowledge.html → {len(items)} 条")
+    except Exception as e:
+        log("WARN", f"科普源刷新失败（沿用本地库）: {type(e).__name__} {e}")
 
 
 def load_json(path, default):
@@ -496,6 +521,7 @@ def main():
     if not os.environ.get("ZHIPU_API_KEY"):
         log("ERROR", "缺少 ZHIPU_API_KEY，按规则停工，不生成任何内容。")
         return 2
+    refresh_library()  # 科普选题固定取自 new.dazi.uk/knowledge.html
     sched = {**DEFAULT_SCHEDULE, **load_json(SCHEDULE_PATH, {})}
     state = load_json(STATE_PATH, {})
     date = datetime.date.today().isoformat()
