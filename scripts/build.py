@@ -400,6 +400,13 @@ BRAND_PAGES = {
 
 
 def build():
+    # 清理旧语言路径残留：英文默认时期繁中在 /zh，现改繁中默认根路径，需删掉旧 /zh 目录
+    old_zh = os.path.join(SITE, "zh")
+    if os.path.isdir(old_zh):
+        shutil.rmtree(old_zh)
+    old_en = os.path.join(SITE, "en")
+    if os.path.isdir(old_en):  # 重建英文，确保无旧文件残留
+        shutil.rmtree(old_en)
     ensure_assets()
     posts = load_posts()
     knowledge = load_knowledge()
