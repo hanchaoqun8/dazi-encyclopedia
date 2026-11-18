@@ -4,9 +4,9 @@
 每天 06:00（昆明时间，GitHub cron 为 UTC 22:00 前一天）由 GitHub Actions 触发：
   1) wiki.dazi.uk       —— 每日 1 篇标准化茶百科词条（繁中 + EN）
                            素材取自 wiki.dazi.uk 的词条索引，只参事实、独立改写、标明原文链接
-  2) new.dazi.uk        —— 每日 1 条生活化茶经验科普（繁中 + EN，产出可直接注入的数据）
+  2) new.dazi.uk        —— 每周一、三、五各 1 条生活化茶经验科普（繁中 + EN，产出可直接注入的数据）
                            素材取自 new.dazi.uk/knowledge.html，用智谱润色得更贴近日常饮用
-  3) blog.dazi.uk       —— 每周一、周四各 1 篇「景东大街乡哪罕」深度 SEO 数据博文
+  3) blog.dazi.uk       —— 每周二、四各 1 篇「景东大街乡哪罕」深度 SEO 数据博文
 
 硬性规则：
   · 只用智谱大模型（ZHIPU_API_KEY），不接其它厂商；没有 key 就报错停工，绝不编内容。
@@ -46,7 +46,12 @@ KW_ZH = ["景東", "大街鄉", "哪罕", "那罕", "Nahang", "景東大街鄉�
 KW_EN = ["Jingdong", "Dajie Township", "Nahang", "那罕", "Jingdong Dajie Township Pu-erh tea"]
 
 SCHEDULE_PATH = os.path.join(ROOT, "docs", "schedule-config.json")
-DEFAULT_SCHEDULE = {"daily_wiki": True, "daily_knowledge": True, "seo_weekdays": [0, 3]}
+DEFAULT_SCHEDULE = {
+    "daily_wiki": True,          # 词条：每日 1 条
+    "daily_knowledge": False,    # 兼容旧字段；科普改由 knowledge_weekdays 控制
+    "knowledge_weekdays": [0, 2, 4],  # 科普：周一/三/五（Python weekday：0=一 1=二 2=三 3=四 4=五）
+    "seo_weekdays": [1, 3],      # 哪罕 SEO：周二/四
+}
 STATE_PATH = os.path.join(ROOT, "docs", "_schedule_state.json")
 KB_PATH = os.path.join(ROOT, "docs", "knowledge-library.json")
 WIKI_KB_PATH = os.path.join(ROOT, "docs", "wiki-source.json")
@@ -638,8 +643,8 @@ def main():
     weekday = datetime.date.today().weekday()
     jobs = []
     if sched.get("daily_wiki", True): jobs.append("wiki")
-    if sched.get("daily_knowledge", True): jobs.append("knowledge")
-    if weekday in sched.get("seo_weekdays", [0, 3]): jobs.append("seo")
+    if weekday in sched.get("knowledge_weekdays", [0, 2, 4]): jobs.append("knowledge")
+    if weekday in sched.get("seo_weekdays", [1, 3]): jobs.append("seo")
     forced = sys.argv[1] if len(sys.argv) > 1 else ""
     if forced:
         if forced not in ("wiki", "knowledge", "seo"):
