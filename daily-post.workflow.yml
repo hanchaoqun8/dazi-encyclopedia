@@ -22,7 +22,7 @@ jobs:
       - name: Install deps
         run: pip install opencc-python-reimplemented pillow
 
-      - name: Generate daily content (wiki + knowledge + 2 SEO posts per week)
+      - name: Generate content (wiki daily · knowledge Mon/Wed/Fri · SEO Tue/Thu)
         env:
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           ZHIPU_MODEL: glm-4-plus
