@@ -13,6 +13,18 @@ DOMAIN = CFG["site"]["domain"]
 
 LANGS = ["en", "zh"]
 LANG_LABEL = {"en": "EN", "zh": "繁"}
+ALT_DATA_ZH = "景東大街鄉哪罕那罕古樹茶倉儲數據記錄"
+ALT_DATA_EN = "Nahang ancient tea storage data, Dajie Township Jingdong Yunnan"
+
+
+def cover_alt(meta, lang):
+    """哪罕数据 SEO 博文使用用户指定的固定 ALT；其余按文章声明或通用产地描述。"""
+    if meta.get("series") == "nahang-data":
+        return ALT_DATA_ZH if lang == "zh" else ALT_DATA_EN
+    if meta.get("cover_alt"):
+        return meta["cover_alt"]
+    return ("哪罕寨茶園實拍，雲南景東大街鄉" if lang == "zh"
+            else "Nahan tea garden, Dajie Township, Jingdong, Yunnan")
 
 
 def prefix(lang):
@@ -30,13 +42,14 @@ def cat_by_id(cid):
     return CFG["categories"][0]
 
 
-def lang_switch(path, lang):
+def lang_switch(path, lang, alt_exists=True):
     """path 为不含语言前缀的路径，如 /posts/xxx/ 或 /"""
     other = "zh" if lang == "en" else "en"
     def href(l):
+        if l == "en" and not alt_exists: return "/"  # 单语文章：EN 无对应页，回落首页
         return ("" if l == "en" else "/zh") + path
     return f'''<div class="lang-switch">
-<a href="{href('en')}" class="{'active' if lang=='en' else ''}">EN</a>
+<a href="{href('en')}" class="{'active' if lang=='en' else ''}" title="{'English version' if alt_exists else 'English home'}">EN</a>
 <a href="{href('zh')}" class="{'active' if lang=='zh' else ''}">繁</a></div>'''
 
 
@@ -96,13 +109,15 @@ def qr_modal(lang):
 </div></div>'''
 
 
-def layout(title, desc, content, lang, path, schema=None, og_image=None):
-    other = "zh" if lang == "en" else "en"
+def layout(title, desc, content, lang, path, schema=None, og_image=None, alternate=True):
     def canon(l): return (DOMAIN + ("" if l=="en" else "/zh") + path)
-    hl = f'<link rel="alternate" hreflang="en" href="{canon("en")}"><link rel="alternate" hreflang="zh-Hant" href="{canon("zh")}"><link rel="alternate" hreflang="x-default" href="{canon("en")}">'
+    hl = (f'<link rel="alternate" hreflang="en" href="{canon("en")}">'
+          f'<link rel="alternate" hreflang="zh-Hant" href="{canon("zh")}">'
+          f'<link rel="alternate" hreflang="x-default" href="{canon("en")}">') if alternate else ""
     ogimg = f'<meta property="og:image" content="{DOMAIN}{og_image}">' if og_image else ""
     schema_tag = f'<script type="application/ld+json">{json.dumps(schema, ensure_ascii=False)}</script>' if schema else ""
     nav_items = "".join(f'<a href="{prefix(lang)}/category/{c["id"]}/">{c["en"] if lang=="en" else c["zh"]}</a>' for c in CFG["categories"])
+    nav_items += f'<a href="{prefix(lang)}/knowledge/">{"Knowledge" if lang=="en" else "茶知識"}</a>'
     footer_nav = "".join(f'<a href="{prefix(lang)}/brand/{p["id"]}/">{p["en"] if lang=="en" else p["zh"]}</a>' for p in CFG["brand_pages"])
     brand = CFG["brand"]
     follow = "Follow" if lang=="en" else "關注"
@@ -119,7 +134,7 @@ def layout(title, desc, content, lang, path, schema=None, og_image=None):
 <header class="top"><div class="top-in">
 <a class="brand" href="{prefix(lang)}/"><span class="leaf">❧</span> {html.escape(t('name',lang))}</a>
 {nav_items}
-{lang_switch(path,lang)}
+{lang_switch(path,lang,alternate)}
 <button class="qr-btn" onclick="openQR()">{follow}</button>
 </div></header>
 <main class="wrap">{content}</main>
@@ -154,6 +169,13 @@ def ensure_assets():
                 if f.endswith(".md"):
                     meta, _ = parse_md(os.path.join(cd, f))
                     c = os.path.basename(meta.get("cover", ""))
+                    if c: covers.add(c)
+        kd = os.path.join(CONTENT, "knowledge")
+        if os.path.isdir(kd):
+            for f in os.listdir(kd):
+                if f.endswith(".json"):
+                    try: c = os.path.basename(json.load(open(os.path.join(kd, f), encoding="utf-8")).get("cover", ""))
+                    except Exception: c = ""
                     if c: covers.add(c)
     tea_img = r"F:/Sites/nahan-tea-blog/images-final"
     if os.path.isdir(tea_img):
@@ -216,12 +238,106 @@ def featured(posts, lang):
     for p in items:
         m = p["meta"]
         cover = m.get("cover", "")
-        img = f'<img src="/assets/img/{cover}" alt="" loading="lazy">' if cover else ""
+        img = f'<img src="/assets/img/{cover}" alt="{html.escape(cover_alt(m, lang))}" loading="lazy">' if cover else ""
         cards.append(f'''<a class="post-card" href="{prefix(lang)}/posts/{p['slug']}/">
 {img}<div class="pc-body"><span class="tag">{cat_by_id(m.get('category','varieties')).get('en' if lang=='en' else 'zh')}</span>
 <h3>{html.escape(m.get('title',''))}</h3><p>{html.escape(m.get('description','')[:90])}…</p></div></a>''')
     title = "Latest from the Encyclopedia" if lang=="en" else "百科最新文章"
     return f'<section class="section"><h2 class="sec-title">{title}</h2><div class="post-grid">'+"".join(cards)+"</div></section>"
+
+
+def load_knowledge():
+    items, d = [], os.path.join(CONTENT, "knowledge")
+    if os.path.isdir(d):
+        for f in sorted(os.listdir(d)):
+            if not f.endswith(".json"): continue
+            try: items.append(json.load(open(os.path.join(d, f), encoding="utf-8")))
+            except Exception: continue
+    items.sort(key=lambda x: x.get("date", ""), reverse=True)
+    return items
+
+
+def knowledge_feed(items):
+    """给 new.dazi.uk/knowledge.html 的即插即用注入脚本 + JSON。"""
+    fresh = [{"url": x.get("url", DOMAIN + "/knowledge/" + x["slug"] + "/"),
+              "title": x.get("title_zh", ""), "summary": x.get("summary_zh", ""),
+              "category": x.get("category", "百科知識"), "content": x.get("body_zh", ""),
+              "source": x.get("source_url", ""), "date": x.get("date", ""),
+              "image": ("/assets/img/" + x["cover"]) if x.get("cover") else "",
+              "alt": x.get("alt_zh", "")} for x in items[:30]]
+    d = os.path.join(SITE, "data")
+    os.makedirs(d, exist_ok=True)
+    open(os.path.join(d, "knowledge-latest.json"), "w", encoding="utf-8").write(
+        json.dumps(fresh, ensure_ascii=False, indent=2))
+    js = ("(function(){var d=window.__PUER_KNOWLEDGE__;if(!d)return;"
+          "d.items=d.items||[];var fresh=" + json.dumps(fresh, ensure_ascii=False) + ";"
+          "var seen={};d.items.forEach(function(x){seen[x.url||x.title]=1;});"
+          "fresh.forEach(function(x){var k=x.url||x.title;if(!seen[k]){d.items.unshift(x);seen[k]=1;}});"
+          "d.meta=d.meta||{};d.meta.total=d.items.length;})();\n")
+    open(os.path.join(SITE, "knowledge-inject.js"), "w", encoding="utf-8").write(js)
+    return fresh
+
+
+def knowledge_block(lang, items):
+    if not items: return ""
+    cards = "".join(
+        f'<a class="post-card" href="{prefix(lang)}/knowledge/{x["slug"]}/"><div class="pc-body">'
+        f'<span class="tag">{html.escape(x.get("category",""))}</span>'
+        f'<h3>{html.escape(x.get("title_zh" if lang=="zh" else "title_en",""))}</h3>'
+        f'<p>{html.escape(x.get("summary_zh" if lang=="zh" else "summary_en","")[:90])}…</p></div></a>'
+        for x in items[:3])
+    title = "Daily Tea Notes" if lang == "en" else "每日茶知識"
+    return f'<section class="section"><h2 class="sec-title">{title}</h2><div class="post-grid">{cards}</div></section>'
+
+
+def build_knowledge(lang, items):
+    p = prefix(lang)
+    title = "Tea Knowledge" if lang == "en" else "茶知識科普"
+    desc = ("Short, sourced daily notes on tea." if lang == "en" else "每日一篇、標註來源的茶知識科普。")
+    cards = "".join(
+        f'<a class="post-card" href="{p}/knowledge/{x["slug"]}/"><div class="pc-body">'
+        f'<span class="tag">{html.escape(x.get("date",""))}</span>'
+        f'<h3>{html.escape(x.get("title_zh" if lang=="zh" else "title_en",""))}</h3>'
+        f'<p>{html.escape(x.get("summary_zh" if lang=="zh" else "summary_en","")[:100])}…</p></div></a>'
+        for x in items)
+    if not cards:
+        cards = '<p class="muted">' + ("Notes are being prepared." if lang=="en" else "科普整理中。") + "</p>"
+    write_page(p + "/knowledge/", layout(title, desc,
+        f'<section class="page-head"><h1>{title}</h1><p>{desc}</p></section><div class="post-grid">{cards}</div>',
+        lang, "/knowledge/"))
+    for x in items:
+        t = x.get("title_zh" if lang == "zh" else "title_en", "")
+        s = x.get("summary_zh" if lang == "zh" else "summary_en", "")
+        b = x.get("body_zh" if lang == "zh" else "body_en", "")
+        paras = "".join("<p>" + inline(ln.strip()) + "</p>" for ln in b.splitlines() if ln.strip())
+        cover = (f'<img class="post-cover" src="/assets/img/{x["cover"]}" '
+                 f'alt="{html.escape(x.get("alt_zh" if lang=="zh" else "alt_en",""))}">') if x.get("cover") else ""
+        src = x.get("source_url", "")
+        src_html = (f'<p class="muted">Source: <a href="{html.escape(src)}">{html.escape(src)}</a></p>'
+                    if src else "")
+        art = (f'<article class="post"><span class="tag">{html.escape(x.get("category",""))}</span>'
+               f'<h1>{html.escape(t)}</h1><p class="muted">{html.escape(s)}</p>{cover}'
+               f'<div class="post-body">{paras}{src_html}</div></article>')
+        write_page(p + "/knowledge/" + x["slug"] + "/", layout(
+            t, s, art, lang, "/knowledge/" + x["slug"] + "/"))
+
+
+def nahang_related(slug, lang, posts):
+    """自动内链全部往期哪罕系列文章（含每周两篇数据 SEO 博文）。"""
+    items = []
+    for x in posts.get(lang, []):
+        if x["slug"] == slug: continue
+        m = x["meta"]
+        if (m.get("series", "") in ("nahang", "nahang-data") or m.get("category") == "journal"
+                or "哪罕" in m.get("title", "") or "Nahang" in m.get("title", "")):
+            items.append(x)
+    items.sort(key=lambda x: x["meta"].get("date", ""), reverse=True)
+    if not items: return ""
+    lis = "".join(
+        f'<li><a href="{prefix(lang)}/posts/{x["slug"]}/">{html.escape(x["meta"].get("title",""))}</a>'
+        f'<span class="rel-date">{html.escape(x["meta"].get("date",""))}</span></li>' for x in items)
+    title = "Previous Nahang field notes" if lang == "en" else "哪罕系列 · 往期紀實"
+    return f'<section class="related"><h2>{title}</h2><ul>{lis}</ul></section>'
 
 
 def brand_teaser(lang):
@@ -253,19 +369,22 @@ BRAND_PAGES = {
   "en": ("# Brand Journal", "<p>Field notes from Nahan: the four seasons of the garden, the picking season, first processing, the people of the mountain, and the quiet everyday rituals of tea. Recorded plainly — no exaggeration, no hype.</p><p>Browse the <a href='/category/journal/'>Our Tea Mountain</a> column for the latest dispatches.</p>"),
   "zh": ("# 品牌紀實", "<p>來自哪罕寨的田間手記：茶園四季、採摘時節、初製過程、茶山人，以及日常的茶事與茶器。真實、樸素、紀實，不誇大、不炒作。</p><p>前往<a href='/zh/category/journal/'>茶山紀實</a>欄目查看最新記錄。</p>")},
  "contact": {
-  "en": ("# Contact", "<p>For garden visits, exchange, wholesale and tea-friend conversations, reach us through the channels below. We keep contact details modest so they never interrupt your reading.</p><p><strong>Phone / WeChat:</strong> +86 13888800714<br><strong>Email:</strong> puer2015tea.qq.com<br><strong>Location:</strong> Nahan Village, Dajie Township, Jingdong, Pu'er, Yunnan</p><p><button class='cta' onclick='openQR()'>Scan WeChat QR</button></p>"),
-  "zh": ("# 聯繫我們", "<p>茶山參觀、交流、商務諮詢與茶友溝通，歡迎透過以下方式聯繫。我們克制地放置聯繫方式，不影響主博客的閱讀體驗。</p><p><strong>電話 / 微信：</strong>+86 13888800714<br><strong>郵箱：</strong>puer2015tea.qq.com<br><strong>地址：</strong>雲南省普洱市景東大街鄉哪罕寨</p><p><button class='cta' onclick='openQR()'>掃描微信二維碼</button></p>")}
+  "en": ("# Contact", "<p>For garden visits, exchange, wholesale and tea-friend conversations, reach us through the channels below. We keep contact details modest so they never interrupt your reading.</p><p><strong>Phone / WeChat:</strong> +86 13888800714<br><strong>Email:</strong> " + CFG["brand"]["email"] + "<br><strong>Location:</strong> Nahan Village, Dajie Township, Jingdong, Pu'er, Yunnan</p><p><button class='cta' onclick='openQR()'>Scan WeChat QR</button></p>"),
+  "zh": ("# 聯繫我們", "<p>茶山參觀、交流、商務諮詢與茶友溝通，歡迎透過以下方式聯繫。我們克制地放置聯繫方式，不影響主博客的閱讀體驗。</p><p><strong>電話 / 微信：</strong>+86 13888800714<br><strong>郵箱：</strong>" + CFG["brand"]["email"] + "<br><strong>地址：</strong>雲南省普洱市景東大街鄉哪罕寨</p><p><button class='cta' onclick='openQR()'>掃描微信二維碼</button></p>")}
 }
 
 
 def build():
     ensure_assets()
     posts = load_posts()
+    knowledge = load_knowledge()
+    knowledge_feed(knowledge)
     for lang in LANGS:
         p = prefix(lang)
         # 首页
         write_page(p + "/", layout(t("name", lang), t("sub", lang),
-            hero(lang) + category_grid(lang) + featured(posts, lang) + brand_teaser(lang),
+            hero(lang) + category_grid(lang) + featured(posts, lang)
+            + knowledge_block(lang, knowledge) + brand_teaser(lang),
             lang, "/", schema={"@context":"https://schema.org","@type":"WebSite",
               "name": t("name",lang),"url":DOMAIN+p+"/"}))
         # 栏目页
@@ -285,18 +404,27 @@ def build():
             m = x["meta"]
             body_html = md_to_html(x["body"])
             cover = m.get("cover", "")
-            cover_html = f'<img class="post-cover" src="/assets/img/{cover}" alt="">' if cover else ""
-            content = f'<article class="post"><span class="tag">{cat_by_id(m.get("category","varieties")).get("en" if lang=="en" else "zh")}</span><h1>{html.escape(m.get("title",""))}</h1>{cover_html}<div class="post-body">{body_html}</div><div class="post-foot"><button class="cta" onclick="openQR()">{'Follow for more' if lang=="en" else '關注更多茶知識'}</button></div></article>'
+            cover_html = (f'<img class="post-cover" src="/assets/img/{cover}" '
+                          f'alt="{html.escape(cover_alt(m, lang))}">') if cover else ""
+            related = nahang_related(x["slug"], lang, posts)
+            content = (f'<article class="post"><span class="tag">{cat_by_id(m.get("category","varieties")).get("en" if lang=="en" else "zh")}</span>'
+                f'<h1>{html.escape(m.get("title",""))}</h1>{cover_html}<div class="post-body">{body_html}</div>'
+                + related +
+                f'<div class="post-foot"><button class="cta" onclick="openQR()">{"Follow for more" if lang=="en" else "關注更多茶知識"}</button></div></article>')
             schema = {"@context":"https://schema.org","@type":"Article","headline":m.get("title",""),
                       "datePublished":m.get("date",""),"description":m.get("description",""),
                       "publisher":{"@type":"Organization","name":CFG["brand"]["company_en"] if lang=="en" else CFG["brand"]["company_zh"]}}
+            alt_slug = x["slug"] in {p["slug"] for p in posts.get("zh" if lang=="en" else "en", [])}
             write_page(p + "/posts/" + x["slug"] + "/", layout(m.get("title",""), m.get("description",""),
-                content, lang, "/posts/"+x["slug"]+"/", schema=schema, og_image=("/assets/img/"+cover) if cover else None))
+                content, lang, "/posts/"+x["slug"]+"/", schema=schema,
+                og_image=("/assets/img/"+cover) if cover else None, alternate=alt_slug))
         # 品牌页
         for bp in CFG["brand_pages"]:
             title, body = BRAND_PAGES[bp["id"]][lang]
             write_page(p + "/brand/" + bp["id"] + "/", layout(title.replace("# ",""), t("tagline",lang),
                 f'<article class="post page-post">{body}</article>', lang, "/brand/"+bp["id"]+"/"))
+        # 每日茶知识科普镜像（同时供 new.dazi.uk 注入）
+        build_knowledge(lang, knowledge)
     # sitemap
     urls = []
     for lang in LANGS:
@@ -305,6 +433,8 @@ def build():
         for c in CFG["categories"]: urls.append(DOMAIN + p + "/category/" + c["id"] + "/")
         for bp in CFG["brand_pages"]: urls.append(DOMAIN + p + "/brand/" + bp["id"] + "/")
         for x in posts.get(lang, []): urls.append(DOMAIN + p + "/posts/" + x["slug"] + "/")
+        urls.append(DOMAIN + p + "/knowledge/")
+        urls += [DOMAIN + p + "/knowledge/" + x["slug"] + "/" for x in knowledge]
     open(os.path.join(SITE, "sitemap.xml"), "w", encoding="utf-8").write(
         '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
         + "".join(f"<url><loc>{u}</loc></url>" for u in urls) + "</urlset>")
