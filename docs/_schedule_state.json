@@ -1,5 +1,5 @@
 {
-  "wiki_count": 2,
+  "wiki_count": 5,
   "used_sources": [
     "https://m.puercp.com/gongxiao/tea_944.html",
     "https://m.puercp.com/wenhua/tea_903.html",
@@ -12,7 +12,16 @@
     "knowledge"
   ],
   "last_notes": [
-    "knowledge/puer-ancient-tree-tea-storage-20261119"
+    "knowledge/ancient-tea-tree-storage-insights-20261119 ← new.dazi.uk"
   ],
-  "seo_count": 2
+  "seo_count": 2,
+  "used_wiki_sources": [
+    "chong-qing-kai-zhou-cha-qu",
+    "hu-nan-cha-ling-cha-qu",
+    "an-hui-jing-de-cha-qu"
+  ],
+  "used_knowledge_sources": [
+    "https://m.puercp.com/baocun/tea_267.html",
+    "https://m.puercp.com/chadao/tea_441.html"
+  ]
 }
