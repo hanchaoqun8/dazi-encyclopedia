@@ -3,7 +3,9 @@
 
 每天 06:00（昆明时间，GitHub cron 为 UTC 22:00 前一天）由 GitHub Actions 触发：
   1) wiki.dazi.uk       —— 每日 1 篇标准化茶百科词条（繁中 + EN）
-  2) new.dazi.uk        —— 每日 1 条茶知识科普（繁中 + EN，产出可直接注入的数据）
+                           素材取自 wiki.dazi.uk 的词条索引，只参事实、独立改写、标明原文链接
+  2) new.dazi.uk        —— 每日 1 条生活化茶经验科普（繁中 + EN，产出可直接注入的数据）
+                           素材取自 new.dazi.uk/knowledge.html，用智谱润色得更贴近日常饮用
   3) blog.dazi.uk       —— 每周一、周四各 1 篇「景东大街乡哪罕」深度 SEO 数据博文
 
 硬性规则：
@@ -11,7 +13,7 @@
   · Title / Description / ALT / 关键词 / 开篇定位句 / 往期内链 全部按固定标准执行。
   · 所有产物先校验后落盘；任一语言不合格 → 整批不写入。
 """
-import os, re, sys, json, random, datetime, subprocess, urllib.request, urllib.error
+import os, re, sys, json, random, datetime, subprocess, base64, urllib.request, urllib.error
 from opencc import OpenCC
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -47,6 +49,11 @@ SCHEDULE_PATH = os.path.join(ROOT, "docs", "schedule-config.json")
 DEFAULT_SCHEDULE = {"daily_wiki": True, "daily_knowledge": True, "seo_weekdays": [0, 3]}
 STATE_PATH = os.path.join(ROOT, "docs", "_schedule_state.json")
 KB_PATH = os.path.join(ROOT, "docs", "knowledge-library.json")
+WIKI_KB_PATH = os.path.join(ROOT, "docs", "wiki-source.json")
+# 两个素材源各自独立；wiki 源只读不写，遵守其 content-signal 声明
+WIKI_REPO = "hanchaoqun8/cha-wiki-mirror"
+WIKI_RAW_FILE = "website/data/tea-wiki-kb.json"
+WIKI_ENTRY_BASE = "https://wiki.dazi.uk/e/"
 
 
 def log(level, msg):
@@ -78,6 +85,49 @@ def refresh_library():
         log("INFO", f"科普源已刷新：new.dazi.uk/knowledge.html → {len(items)} 条")
     except Exception as e:
         log("WARN", f"科普源刷新失败（沿用本地库）: {type(e).__name__} {e}")
+
+
+def refresh_wiki_source():
+    """从 cha-wiki-mirror 刷新 wiki.dazi.uk 的词条素材索引。
+    只取标题/分类/短摘要与原文链接，不下载或复制原文正文；
+    遵守其 content-signal：search=yes, ai-train=no, use=reference。
+    无 GH_TOKEN 或抓取失败时沿用仓库内已提交索引，不中断当天其它任务。"""
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    if not token:
+        log("INFO", "wiki 素材源：无 GH_TOKEN，沿用仓库内索引")
+        return
+    try:
+        h = {"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
+             "User-Agent": "dazi-dispatch/1.0"}
+        api = f"https://api.github.com/repos/{WIKI_REPO}/contents/{WIKI_RAW_FILE}"
+        d = json.loads(urllib.request.urlopen(urllib.request.Request(api, headers=h), timeout=30).read().decode())
+        sha = d.get("sha", "")
+        local = load_json(WIKI_KB_PATH, {})
+        if sha and local.get("meta", {}).get("blob_sha") == sha:
+            log("INFO", f"wiki 素材源无变化（{sha[:8]}），沿用本地索引")
+            return
+        blob = json.loads(urllib.request.urlopen(urllib.request.Request(
+            f"https://api.github.com/repos/{WIKI_REPO}/git/blobs/{sha}", headers=h), timeout=90).read().decode())
+        src = json.loads(base64.b64decode(blob["content"]).decode("utf-8"))
+        cats = src.get("cats", [])
+        items = []
+        for row in src.get("items", []):
+            if len(row) < 4 or not row[0] or not row[1]:
+                continue
+            slug, title, cat, summary = row[0], row[1], row[2], row[3]
+            c = cats[cat] if isinstance(cat, int) and 0 <= cat < len(cats) else str(cat)
+            items.append({"s": slug, "t": title, "c": c, "d": summary[:160]})
+        if len(items) < 1000:
+            raise ValueError(f"词条异常偏少 {len(items)}")
+        save_json(WIKI_KB_PATH, {"meta": {
+            "source": "https://wiki.dazi.uk", "source_page": "https://wiki.dazi.uk/",
+            "origin": src.get("source", ""), "source_name": src.get("source_name", ""),
+            "license": src.get("license", ""), "content_signal": src.get("content_signal", ""),
+            "usage": src.get("usage", ""), "generated": src.get("generated", ""),
+            "blob_sha": sha, "total": len(items)}, "cats": cats, "items": items})
+        log("INFO", f"wiki 素材源已刷新：wiki.dazi.uk → {len(items)} 条")
+    except Exception as e:
+        log("WARN", f"wiki 素材源刷新失败（沿用本地索引）: {type(e).__name__} {e}")
 
 
 def load_json(path, default):
@@ -172,12 +222,30 @@ def ensure_opening(body, lang, forced=False):
 def wiki_prompt(cat, hint, lang, date, err=""):
     name = cat["en"] if lang == "en" else cat["zh"]
     heads = "\n".join("## " + h for h in (EN_H2 if lang == "en" else ZH_H2))
+    if isinstance(hint, dict):
+        src_en = ("Reference entry from wiki.dazi.uk — use facts only, rewrite in your own words, "
+                  "never reproduce the original sentences, and credit the source URL in source_note.\n"
+                  f"IMPORTANT: the entry MUST be about the subject '{hint.get('t','')}'. "
+                  "Do not substitute a generic category topic; the title must name this subject. "
+                  "Write the title, description and all body text in ENGLISH — translate the subject "
+                  "name into English; never copy Chinese characters into the English entry.\n"
+                  f"Title: {hint.get('t','')}\nCategory: {hint.get('c','')}\n"
+                  f"Fact summary: {hint.get('d','')}\nSource URL: {hint.get('u','')}\n")
+        src_zh = ("參考資料來自 wiki.dazi.uk——只取其中事實，請用自己的話重寫，不得照抄原句，"
+                  "並在 source_note 標明來源網址。\n"
+                  f"重要：詞條必須圍繞參考詞條「{hint.get('t','')}」撰寫，不得改成欄目通用名稱，"
+                  "標題須點明該主體。標題、描述與全文一律使用繁體中文。\n"
+                  f"詞條名：{hint.get('t','')}\n分類：{hint.get('c','')}\n"
+                  f"事實摘要：{hint.get('d','')}\n原文網址：{hint.get('u','')}\n")
+    else:
+        src_en = f"Idea from our source library (do not copy verbatim): {hint}\n" if hint else ""
+        src_zh = f"可選靈感（勿照抄）：{hint}\n" if hint else ""
     if lang == "en":
         sysmsg = ("You write standardized, neutral encyclopedia entries for a bilingual Chinese-tea "
                   "reference site. No advertising, no medical claims, no invented precise statistics. "
                   "Tea is a daily beverage, not a substitute for medicine.")
         user = (f"Write ONE encyclopedia entry for '{name}'. ~800 words.\n"
-                + (f"Idea from our source library (do not copy verbatim): {hint}\n" if hint else "")
+                + src_en
                 + f"Use EXACTLY these 9 H2 headings in order:\n{heads}\n"
                 f"Front matter (exact keys): title (SEO, 50-60 characters), slug (lowercase English), "
                 f"date: {date}, category: {cat['id']}, kind: wiki, entry_type: encyclopedia, "
@@ -188,7 +256,7 @@ def wiki_prompt(cat, hint, lang, date, err=""):
         sysmsg = ("你是繁體中文茶百科詞條撰稿人。客觀、權威、百科體，禁止簡體、禁止療效宣傳、"
                   "禁止虛構精確數據。茶是日常飲品，不能替代藥物或治療。")
         user = (f"寫一篇標準化百科詞條，欄目：{name}。約 1000–1200 字。\n"
-                + (f"可選靈感（勿照抄）：{hint}\n" if hint else "")
+                + src_zh
                 + f"嚴格按以下 9 個二級標題順序：\n{heads}\n"
                 f"front matter 精確鍵：title（SEO 標題 50–60 字符）、slug（英文小寫）、"
                 f"date: {date}、category: {cat['id']}、kind: wiki、entry_type: encyclopedia、"
@@ -203,9 +271,11 @@ def knowledge_prompt(topic, date, err=""):
     summary = topic.get("s", "")[:300]
     cat = topic.get("c", "")
     url = topic.get("u", "")
-    sysmsg = ("You are a careful Chinese tea knowledge editor. Rewrite source material into original, "
-              "plain-language popular science. Never invent data, never make health or cure claims. "
-              "Traditional Chinese only for zh fields.")
+    sysmsg = ("You are a lifestyle tea editor. Rewrite the source into original, warm, everyday "
+              "popular science — the sort of short note a tea drinker would share with a friend. "
+              "Use concrete daily scenes (brewing, tasting, storage, quiet rituals), plain language, "
+              "and a lived-in tone; never invent data, never make health or cure claims. "
+              "Traditional Chinese only for zh fields. Tea is a daily beverage, not a substitute for medicine.")
     user = f"""Based on the source below, output ONE JSON object only (no code fence, no prose).
 Fields: slug, title_zh, title_en, summary_zh (120-150 chars), summary_en (120-150 chars),
 body_zh (400-600 chars, traditional Chinese), body_en (200-300 words),
@@ -213,6 +283,8 @@ category, source_title, source_url, cover, alt_zh, alt_en.
 Cover must be one of: {', '.join(COVERS)}.
 alt_zh must be "{ALT_ZH}" and alt_en must be "{ALT_EN}".
 State clearly in both bodies: tea is a daily beverage, not a substitute for medicine.
+Keep the tone more lived-in than an encyclopedia: everyday drinking scenes, small practical details,
+never stiff or promotional. Do not fabricate personal anecdotes as facts.
 Source category: {cat}
 Source title: {title}
 Source summary: {summary}
@@ -283,6 +355,12 @@ def validate_article(content, lang, kind):
     desc = fm_get(content, "description") or ""
     title = fm_get(content, "title") or ""
     if not (120 <= len(desc) <= 150): errs.append(f"description {len(desc)} 字符")
+    # 语言守卫：英文文章的标题/描述/ALT 不得混入中文字符（素材标题是中文，模型易照抄）
+    if lang == "en":
+        for fld, val in (("title", title), ("description", desc),
+                         ("cover_alt", fm_get(content, "cover_alt") or "")):
+            if re.search(r"[\u4e00-\u9fff]", val):
+                errs.append(f"{fld} 混入中文，请用英文重写")
     if kind == "seo":
         if not (50 <= len(title) <= 60): errs.append(f"title {len(title)} 字符")
         alt = fm_get(content, "cover_alt")
@@ -355,24 +433,33 @@ def force_structure(content, lang):
 def fit_field(content, key, lo, hi, tails, by_word=False):
     val = fm_get(content, key) or ""
     tails = [tails] if isinstance(tails, str) else list(tails)
-    ti = 0
-    while len(val) < lo and ti < len(tails):
-        tail = tails[ti]; ti += 1
-        sep = "" if val.endswith(("。", "！", "？")) else " "
-        val = (val + sep + tail).strip()
-    while len(val) < lo:
-        val += "·" if any("\u4e00" <= ch <= "\u9fff" for ch in val) else " - note"
+    # 去掉模型重复拼接的尾巴
+    for t in tails:
+        while t and len(val) > 2 * len(t) and (t + t) in val:
+            val = val.replace(t + t, t)
+    zh = any("\u4e00" <= ch <= "\u9fff" for ch in val)
+    fill = ("本文只談可核查的田間方法與日常沖泡，不涉及保健功效。" if zh else
+            "The article stays with verifiable field practice and everyday brewing, without health claims.")
+    # 补足到 lo：逐条用 tails，最后用中性说明，不产生「 - note」「··」这类噪声
+    for t in tails + [fill]:
+        if len(val) >= lo: break
+        sep = "" if (zh or not val) else " "
+        val = (val + sep + t).strip()
+    # 截断到 hi，按标点或词边界回退，避免断在半个单词
     if len(val) > hi:
         cut = val[:hi]
         if by_word:
             w = cut.rsplit(" ", 1)[0]
             if len(w) >= lo: cut = w
         else:
-            for p in ("。", "；", ". "):
+            for p in ("。", "；", "！", ". "):
                 idx = cut.rfind(p)
-                if lo - 8 <= idx < hi: cut = cut[:idx + len(p)]; break
-        if len(cut) < lo: cut = val[:hi]  # 标点回退会把长度压回去，此时硬截断
-        val = cut.rstrip(" ，,;；:：")
+                if lo - 10 <= idx < hi:
+                    cut = cut[:idx + len(p)]
+                    break
+        val = cut.rstrip(" ，,;；:：-·")
+        if len(val) < lo:
+            val = (val + fill)[:hi]
     return re.sub(rf"^{re.escape(key)}:.*$", f'{key}: "{val}"', content, flags=re.M)
 
 
@@ -385,7 +472,8 @@ def gen_validated(prompt_fn, lang, kind, max_tokens=3200, postprocess=None, trie
         content = clean(content, lang)
         content = force_structure(content, lang)
         content = fit_field(content, "description", 120, 150,
-                            DESC_TAILS_EN if lang == "en" else DESC_TAILS_ZH)
+                            DESC_TAILS_EN if lang == "en" else DESC_TAILS_ZH,
+                            by_word=(lang == "en"))
         if kind == "seo":
             content = fit_field(content, "title", 50, 60,
                                 TITLE_TAILS_EN if lang == "en" else TITLE_TAILS_ZH,
@@ -400,21 +488,25 @@ def gen_validated(prompt_fn, lang, kind, max_tokens=3200, postprocess=None, trie
 
 
 def gen_wiki(state, date):
-    cats = CFG["categories"]
+    cats = [c for c in CFG["categories"] if c["id"] != "standards"]
     cat = cats[state.get("wiki_count", 0) % len(cats)]
-    lib = load_json(KB_PATH, {}).get("items", [])
-    used = set(state.get("used_sources", []))
-    pool = [x for x in lib if x.get("u") not in used] or lib
-    hint = random.choice(pool).get("t", "") if pool else ""
-    src_url = random.choice(pool).get("u", "") if pool else ""
+    lib = load_json(WIKI_KB_PATH, {}).get("items", [])
+    used = set(state.get("used_wiki_sources", []))
+    pool = [x for x in lib if x.get("s") and x["s"] not in used] or lib
+    topic = random.choice(pool) if pool else {}
+    src_slug = topic.get("s", "")
+    src_url = WIKI_ENTRY_BASE + src_slug if src_slug else "https://wiki.dazi.uk/"
+    hint = ({"t": topic.get("t", ""), "c": topic.get("c", ""),
+             "d": topic.get("d", ""), "u": src_url} if topic else "")
     out, slug = [], None
     def process(c):
         nonlocal slug
         if lang == "en":
             slug = unique_slug(os.path.join(ROOT, "content", "wiki", "en"),
-                               slugify(fm_get(c, "slug") or hint))
+                               slugify(fm_get(c, "slug") or topic.get("t", "")))
         c = re.sub(r"^slug:.*$", f'slug: "{slug}"', c, flags=re.M)
-        note = f'source_note: "Editorially checked; source: {src_url}"'
+        note = (f'source_note: "Facts referenced from wiki.dazi.uk and rewritten independently; '
+                f'no original text reproduced. Source: {src_url}"')
         c = (re.sub(r"^source_note:.*$", note, c, flags=re.M)
              if re.search(r"^source_note:", c, re.M)
              else re.sub(r"^(---\s*\n.*?)(\n---\s*\n)", lambda m: m.group(1) + "\n" + note + m.group(2), c, count=1, flags=re.S))
@@ -425,13 +517,13 @@ def gen_wiki(state, date):
         if not content: return None, model
         out.append((os.path.join(ROOT, "content", "wiki", lang, slug + ".md"), content))
     state["wiki_count"] = state.get("wiki_count", 0) + 1
-    if src_url: state.setdefault("used_sources", []).append(src_url)
-    return out, f"wiki/{slug} ({cat['id']})"
+    if src_slug: state.setdefault("used_wiki_sources", []).append(src_slug)
+    return out, f"wiki/{slug} ({cat['id']}) ← wiki.dazi.uk/{src_slug}"
 
 
 def gen_knowledge(state, date):
     lib = load_json(KB_PATH, {}).get("items", [])
-    used = set(state.get("used_sources", []))
+    used = set(state.get("used_knowledge_sources", []))
     pool = [x for x in lib if x.get("u") not in used] or lib
     if not pool: return None, "知识库为空"
     topic = random.choice(pool)
@@ -455,15 +547,32 @@ def gen_knowledge(state, date):
         data["date"] = date
         data["source_url"] = topic.get("u", "")
         data["slug"] = slugify(data["slug"]) + "-" + date.replace("-", "")
-        lz, le = len(data["summary_zh"]), len(data["summary_en"])
-        if lz < 120:
-            data["summary_zh"] = (data["summary_zh"] + DESC_TAIL_ZH)[:150]
-        if le < 120:
-            data["summary_en"] = (data["summary_en"] + " " + DESC_TAIL_EN)[:150]
-        lz, le = len(data["summary_zh"]), len(data["summary_en"])
-        if not (120 <= lz <= 150 and 120 <= le <= 150):
-            data["summary_zh"] = (DESC_TAIL_ZH * 3)[:150]
-            data["summary_en"] = (DESC_TAIL_EN * 3)[:150]
+        # 摘要归一化：优先用模型原文，不足时按「来源摘要 → 品牌说明 → 中性说明」补足，
+        # 绝不把同一句重复三遍来凑字数。
+        src_zh = S2T.convert(topic.get("s", ""))[:150]
+        zh_fill = "本文只談日常飲茶的可核查細節，不涉及保健功效。"
+        en_fill = "A concise note on everyday tea drinking, kept factual and free of health claims."
+        for t in ([src_zh, DESC_TAIL_ZH, zh_fill] if src_zh else [DESC_TAIL_ZH, zh_fill]):
+            if len(data["summary_zh"]) >= 120: break
+            data["summary_zh"] = (data["summary_zh"] + t).strip()
+        for t in [DESC_TAIL_EN, en_fill]:
+            if len(data["summary_en"]) >= 120: break
+            sep = "" if not data["summary_en"] else " "
+            data["summary_en"] = (data["summary_en"] + sep + t).strip()
+        for k, hi, by_word in (("summary_zh", 150, False), ("summary_en", 150, True)):
+            v = data[k]
+            if len(v) > hi:
+                cut = v[:hi]
+                if by_word:
+                    w = cut.rsplit(" ", 1)[0]
+                    if len(w) >= 120: cut = w
+                else:
+                    for p in ("。", "；", "！"):
+                        idx = cut.rfind(p)
+                        if 110 <= idx < hi: cut = cut[:idx + len(p)]; break
+                v = cut.rstrip(" ，,;；:：-·")
+                if len(v) < 120: v = (v + (zh_fill if k == "summary_zh" else en_fill))[:hi]
+            data[k] = v
         if has_banned(data["body_zh"] + data["body_en"]):
             data["body_zh"] = strip_banned_sentences(data["body_zh"], "zh")
             data["body_en"] = strip_banned_sentences(data["body_en"], "en")
@@ -473,8 +582,8 @@ def gen_knowledge(state, date):
     else:
         return None, "knowledge 连续 3 次校验未过"
     path = os.path.join(ROOT, "content", "knowledge", data["slug"] + ".json")
-    state.setdefault("used_sources", []).append(topic.get("u", ""))
-    return [(path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")], f"knowledge/{data['slug']}"
+    state.setdefault("used_knowledge_sources", []).append(topic.get("u", ""))
+    return [(path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")], f"knowledge/{data['slug']} ← new.dazi.uk"
 
 
 ANGLES = [
@@ -521,7 +630,8 @@ def main():
     if not os.environ.get("ZHIPU_API_KEY"):
         log("ERROR", "缺少 ZHIPU_API_KEY，按规则停工，不生成任何内容。")
         return 2
-    refresh_library()  # 科普选题固定取自 new.dazi.uk/knowledge.html
+    refresh_library()      # 科普选题固定取自 new.dazi.uk/knowledge.html
+    refresh_wiki_source()  # 词条素材固定取自 wiki.dazi.uk（经 cha-wiki-mirror 索引）
     sched = {**DEFAULT_SCHEDULE, **load_json(SCHEDULE_PATH, {})}
     state = load_json(STATE_PATH, {})
     date = datetime.date.today().isoformat()
@@ -552,7 +662,8 @@ def main():
     state["last_run"] = date
     state["last_jobs"] = jobs
     state["last_notes"] = notes
-    state["used_sources"] = state.get("used_sources", [])[-400:]
+    for key in ("used_sources", "used_wiki_sources", "used_knowledge_sources"):
+        state[key] = state.get(key, [])[-400:]
     save_json(STATE_PATH, state)
     log("INFO", f"完成 {len(all_items)} 个文件: " + " | ".join(notes))
     return 0
