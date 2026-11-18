@@ -43,7 +43,10 @@
      "zh_sub":"蓋碗、紫壺、公道杯與茶席生活。"},
     {"id":"journal","en":"Our Tea Mountain","zh":"品牌初心·茶山紀實","icon":"mountain",
      "en_sub":"Field notes from Nahan — the people, the garden, the craft.",
-     "zh_sub":"來自哪罕寨的田間手記——茶園、茶人與工藝。"}
+     "zh_sub":"來自哪罕寨的田間手記——茶園、茶人與工藝。"},
+    {"id":"standards","en":"EU & US Tea Standards","zh":"歐美執行標準","icon":"shield",
+     "en_sub":"EU MRLs, FDA import rules, lab testing and storage compliance — the 28 legacy guides, kept in full.",
+     "zh_sub":"歐盟農殘、美國進口法規、第三方檢測與倉儲合規——完整保留原有 28 篇標準指南。"}
   ],
   "brand_pages": [
     {"id":"about","en":"About Us","zh":"關於我們"},
