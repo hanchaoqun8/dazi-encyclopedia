@@ -54,7 +54,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npx --yes wrangler@4 pages deploy site \
-            --project-name=dazi-encyclopedia --branch=main --commit-dirty=true
+            --project-name=dazi-tea-blog --branch=main --commit-dirty=true
 
       - name: Deploy wiki.dazi.uk
         env:
