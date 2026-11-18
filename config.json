@@ -1,0 +1,53 @@
+{
+  "site": {
+    "name_en": "The Tea Ledger",
+    "name_zh": "大枝茶文化百科",
+    "tagline_en": "源自景东哪罕深山，守生态之本，做良心好茶，传真实茶学。",
+    "tagline_zh": "源自景東哪罕深山，守生態之本，做良心好茶，傳真實茶學。",
+    "sub_en": "深耕云南茶山多年，以专业茶文化科普，让每一位茶友喝得明白、喝得安心。",
+    "sub_zh": "深耕雲南茶山多年，以專業茶文化科普，讓每一位茶友喝得明白、喝得安心。",
+    "domain": "https://blog.dazi.uk"
+  },
+  "brand": {
+    "company_zh": "雲南哪罕農業科技有限公司",
+    "company_en": "Yunnan Nahan Agriculture Technology Co., Ltd.",
+    "brand_zh": "大枝",
+    "brand_en": "Dazhi",
+    "founded": "2016-11-10",
+    "location_zh": "雲南省普洱市景東大街鄉哪罕寨",
+    "location_en": "Nahan Village, Dajie Township, Jingdong, Pu'er, Yunnan, China",
+    "phone": "+86 13888800714",
+    "email": "puer2015tea.qq.com",
+    "wechat_qr": "/assets/img/wechat-qr.png"
+  },
+  "categories": [
+    {"id":"varieties","en":"Tea Varieties","zh":"茶葉品種百科","icon":"leaf",
+     "en_sub":"Profiles of every major Chinese tea — origin, terroir, craft and cup.",
+     "zh_sub":"主流茶類全覆盖——產地、風土、工藝與杯中滋味。"},
+    {"id":"brewing","en":"Brewing Guide","zh":"沖泡與品鑑教程","icon":"cup",
+     "en_sub":"Water temperature, ratios, teaware and step-by-step methods.",
+     "zh_sub":"水溫、投茶比、器具與逐步沖泡方法。"},
+    {"id":"wellness","en":"Tea & Constitution","zh":"飲茶功效與體質","icon":"balance",
+     "en_sub":"Objective, evidence-aware notes on tea and daily drinking.",
+     "zh_sub":"客觀、克制的飲茶科普與體質適配。"},
+    {"id":"buying","en":"Selection & Authentication","zh":"選購與鑑別避坑","icon":"search",
+     "en_sub":"How to judge quality, spot fakes and avoid market traps.",
+     "zh_sub":"如何辨好壞、識真假、避開市場套路。"},
+    {"id":"culture","en":"Tea Culture & History","zh":"茶文化與茶歷史","icon":"scroll",
+     "en_sub":"Origins, traditions, tea mountains and intangible craft.",
+     "zh_sub":"起源、禮俗、名山風土與非遺工藝。"},
+    {"id":"teaware","en":"Teaware & Lifestyle","zh":"茶器與茶道生活","icon":"pot",
+     "en_sub":"Gaiwan, teapot, fair cup and the quiet art of tea space.",
+     "zh_sub":"蓋碗、紫壺、公道杯與茶席生活。"},
+    {"id":"journal","en":"Our Tea Mountain","zh":"品牌初心·茶山紀實","icon":"mountain",
+     "en_sub":"Field notes from Nahan — the people, the garden, the craft.",
+     "zh_sub":"來自哪罕寨的田間手記——茶園、茶人與工藝。"}
+  ],
+  "brand_pages": [
+    {"id":"about","en":"About Us","zh":"關於我們"},
+    {"id":"garden","en":"Our Garden","zh":"我們的茶山"},
+    {"id":"philosophy","en":"Our Philosophy","zh":"大枝的製茶理念"},
+    {"id":"journal","en":"Brand Journal","zh":"品牌紀實"},
+    {"id":"contact","en":"Contact","zh":"聯繫我們"}
+  ]
+}
