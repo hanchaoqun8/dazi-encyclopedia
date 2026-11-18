@@ -6,7 +6,9 @@
     "tagline_zh": "源自景東哪罕深山，守生態之本，做良心好茶，傳真實茶學。",
     "sub_en": "深耕云南茶山多年，以专业茶文化科普，让每一位茶友喝得明白、喝得安心。",
     "sub_zh": "深耕雲南茶山多年，以專業茶文化科普，讓每一位茶友喝得明白、喝得安心。",
-    "domain": "https://blog.dazi.uk"
+    "domain": "https://blog.dazi.uk",
+    "wiki_domain": "https://wiki.dazi.uk",
+    "knowledge_domain": "https://new.dazi.uk"
   },
   "brand": {
     "company_zh": "雲南哪罕農業科技有限公司",
@@ -17,7 +19,7 @@
     "location_zh": "雲南省普洱市景東大街鄉哪罕寨",
     "location_en": "Nahan Village, Dajie Township, Jingdong, Pu'er, Yunnan, China",
     "phone": "+86 13888800714",
-    "email": "puer2015tea.qq.com",
+    "email": "puer2015tea@qq.com",
     "wechat_qr": "/assets/img/wechat-qr.png"
   },
   "categories": [
