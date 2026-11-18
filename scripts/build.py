@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """高端茶葉百科雙語站生成器
-英文默认(根路径) / 繁中(/zh-hant/)；7大栏目+品牌5子页；微信私域弹窗；SEO hreflang/sitemap/JSON-LD。
+繁中默认(根路径) / 英文(/en/)；7大栏目+品牌5子页；微信私域弹窗；SEO hreflang/sitemap/JSON-LD。
 零第三方依赖。
 """
 import os, re, json, html, shutil
@@ -11,8 +11,8 @@ CONTENT = os.path.join(ROOT, "content")
 SITE = os.path.join(ROOT, "site")
 DOMAIN = CFG["site"]["domain"]
 
-LANGS = ["en", "zh"]
-LANG_LABEL = {"en": "EN", "zh": "繁"}
+LANGS = ["zh", "en"]
+LANG_LABEL = {"zh": "繁", "en": "EN"}
 ALT_DATA_ZH = "景東大街鄉哪罕那罕古樹茶倉儲數據記錄"
 ALT_DATA_EN = "Nahang ancient tea storage data, Dajie Township Jingdong Yunnan"
 
@@ -28,7 +28,8 @@ def cover_alt(meta, lang):
 
 
 def prefix(lang):
-    return "" if lang == "en" else "/" + lang
+    """繁中默认走根路径，英文走 /en。"""
+    return "" if lang == "zh" else "/en"
 
 
 def t(site_key, lang):
@@ -50,14 +51,15 @@ def display_cat(meta, lang):
 
 
 def lang_switch(path, lang, alt_exists=True):
-    """path 为不含语言前缀的路径，如 /posts/xxx/ 或 /"""
-    other = "zh" if lang == "en" else "en"
+    """path 为不含语言前缀的路径，如 /posts/xxx/ 或 /。繁中默认根路径，英文 /en。"""
     def href(l):
-        if l == "en" and not alt_exists: return "/"  # 单语文章：EN 无对应页，回落首页
-        return ("" if l == "en" else "/zh") + path
+        # 单语文章：另一语言无对应页时回落到该语言首页，避免 404
+        if not alt_exists and l != lang:
+            return "/en/" if l == "en" else "/"
+        return ("" if l == "zh" else "/en") + path
     return f'''<div class="lang-switch">
-<a href="{href('en')}" class="{'active' if lang=='en' else ''}" title="{'English version' if alt_exists else 'English home'}">EN</a>
-<a href="{href('zh')}" class="{'active' if lang=='zh' else ''}">繁</a></div>'''
+<a href="{href('zh')}" class="{'active' if lang=='zh' else ''}" title="繁體中文版">繁</a>
+<a href="{href('en')}" class="{'active' if lang=='en' else ''}" title="{'English version' if alt_exists else 'English home'}">EN</a></div>'''
 
 
 def parse_md(path):
@@ -117,10 +119,10 @@ def qr_modal(lang):
 
 
 def layout(title, desc, content, lang, path, schema=None, og_image=None, alternate=True):
-    def canon(l): return (DOMAIN + ("" if l=="en" else "/zh") + path)
-    hl = (f'<link rel="alternate" hreflang="en" href="{canon("en")}">'
-          f'<link rel="alternate" hreflang="zh-Hant" href="{canon("zh")}">'
-          f'<link rel="alternate" hreflang="x-default" href="{canon("en")}">') if alternate else ""
+    def canon(l): return (DOMAIN + ("/en" if l=="en" else "") + path)
+    hl = (f'<link rel="alternate" hreflang="zh-Hant" href="{canon("zh")}">'
+          f'<link rel="alternate" hreflang="en" href="{canon("en")}">'
+          f'<link rel="alternate" hreflang="x-default" href="{canon("zh")}">') if alternate else ""
     ogimg = f'<meta property="og:image" content="{DOMAIN}{og_image}">' if og_image else ""
     schema_tag = f'<script type="application/ld+json">{json.dumps(schema, ensure_ascii=False)}</script>' if schema else ""
     nav_items = "".join(f'<a href="{prefix(lang)}/category/{c["id"]}/">{c["en"] if lang=="en" else c["zh"]}</a>' for c in CFG["categories"])
@@ -217,13 +219,13 @@ def hero(lang):
 <div class="eyebrow">A Tea Encyclopedia · Rooted in Nahan Mountain</div>
 <h1>Understand tea,<br>one leaf at a time.</h1>
 <p>From Jingdong's Ailao mountains — clean, professional, ad-free tea knowledge. Varieties, brewing, culture, and honest guidance for every cup.</p>
-<a class="cta" href="/category/varieties/">Explore the Encyclopedia →</a>
+<a class="cta" href="/en/category/varieties/">Explore the Encyclopedia →</a>
 </div></section>'''
     return '''<section class="hero"><div class="hero-in">
 <div class="eyebrow">茶葉百科 · 植根哪罕茶山</div>
 <h1>讀懂一杯茶，<br>從一片葉開始。</h1>
 <p>來自景東哀牢山——乾淨、專業、無廣告的茶知識。品種、沖泡、文化與真實選購建議，陪你喝得明白。</p>
-<a class="cta" href="/zh/category/varieties/">進入茶葉百科 →</a>
+<a class="cta" href="/category/varieties/">進入茶葉百科 →</a>
 </div></section>'''
 
 
@@ -238,16 +240,32 @@ def category_grid(lang):
     return '<section class="section"><h2 class="sec-title">' + ('Explore by Topic' if lang=="en" else '按主題探索') + '</h2><div class="cat-grid">' + "".join(cards) + "</div></section>"
 
 
+def visible_posts(posts, lang, cid=None):
+    """跨语言可见：本语言文章优先，另一语言独有的文章也列出（标注语言、链接到原文）。
+    这样默认繁中站仍能看到只有英文版的 28 篇欧美标准文章，反之亦然。"""
+    other = "en" if lang == "zh" else "zh"
+    own = [p for p in posts.get(lang, []) if cid is None or p["meta"].get("category") == cid]
+    own_slugs = {p["slug"] for p in posts.get(lang, [])}
+    extra = [p for p in posts.get(other, [])
+             if p["slug"] not in own_slugs and (cid is None or p["meta"].get("category") == cid)]
+    return [(p, lang) for p in own] + [(p, other) for p in extra]
+
+
+def lang_badge(real, lang):
+    return "" if real == lang else ('<span class="lang-badge">EN</span>' if real == "en" else '<span class="lang-badge">繁</span>')
+
+
 def featured(posts, lang):
-    items = posts.get(lang, [])[:6]
+    items = visible_posts(posts, lang)[:6]
     if not items: return ""
     cards = []
-    for p in items:
+    for p, real in items:
         m = p["meta"]
         cover = m.get("cover", "")
-        img = f'<img src="/assets/img/{cover}" alt="{html.escape(cover_alt(m, lang))}" loading="lazy">' if cover else ""
-        cards.append(f'''<a class="post-card" href="{prefix(lang)}/posts/{p['slug']}/">
-{img}<div class="pc-body"><span class="tag">{html.escape(display_cat(m, lang))}</span>
+        img = f'<img src="/assets/img/{cover}" alt="{html.escape(cover_alt(m, real))}" loading="lazy">' if cover else ""
+        href = prefix(real) + "/posts/" + p["slug"] + "/"
+        cards.append(f'''<a class="post-card" href="{href}">
+{img}<div class="pc-body"><span class="tag">{lang_badge(real, lang)}{html.escape(display_cat(m, real))}</span>
 <h3>{html.escape(m.get('title',''))}</h3><p>{html.escape(m.get('description','')[:90])}…</p></div></a>''')
     title = "Latest from the Encyclopedia" if lang=="en" else "百科最新文章"
     return f'<section class="section"><h2 class="sec-title">{title}</h2><div class="post-grid">'+"".join(cards)+"</div></section>"
@@ -354,12 +372,12 @@ def brand_teaser(lang):
 <div class="eyebrow">Behind the Leaves</div>
 <h2>Grown in Nahan. Made with conscience.</h2>
 <p>Founded in 2016, {b['company_en']} tends its own原生 garden in Nahan Village, Jingdong, Yunnan — ecological cultivation, restrained craft, and honest tea... </p>
-<a class="cta ghost" href="/brand/about/">Our Story →</a></div></section>'''
+<a class="cta ghost" href="/en/brand/about/">Our Story →</a></div></section>'''
     return f'''<section class="brand-band"><div class="bb-in">
 <div class="eyebrow">茶葉背後</div>
 <h2>生於哪罕，良心製茶。</h2>
 <p>{b['company_zh']}成立於2016年，在雲南景東哪罕寨守著自有茶園——生態種植、克制工藝、真實做茶。</p>
-<a class="cta ghost" href="/zh/brand/about/">認識我們 →</a></div></section>'''
+<a class="cta ghost" href="/brand/about/">認識我們 →</a></div></section>'''
 
 
 BRAND_PAGES = {
@@ -373,8 +391,8 @@ BRAND_PAGES = {
   "en": ("# Our Philosophy", "<p>Dazhi holds three commitments:</p><ol><li><strong>Traceable origin</strong> — our own garden and first-processing chain, clear and traceable.</li><li><strong>Ecology first</strong> — respecting the forest environment of Nahan and staying on the ecological-tea path.</li><li><strong>Restrained craft</strong> — no artificial ageing, no forced aroma; the leaf's true character is kept.</li></ol><p>Good tea does not need heavy modification. Clean raw material and moderate craft already express the origin.</p>"),
   "zh": ("# 大枝的製茶理念", "<p>大枝品牌堅持三件事：</p><ol><li><strong>源頭可控</strong>：自有茶山與初製鏈路清楚可追溯；</li><li><strong>生態為本</strong>：尊重哪罕寨山林環境，堅持生態茶方向；</li><li><strong>工藝克制</strong>：不過度做舊，不人為修飾香氣，保留茶葉本味。</li></ol><p>好茶不必靠過度修飾，乾淨的原料與適度的工藝，已經能表達產地本身。</p>")},
  "journal": {
-  "en": ("# Brand Journal", "<p>Field notes from Nahan: the four seasons of the garden, the picking season, first processing, the people of the mountain, and the quiet everyday rituals of tea. Recorded plainly — no exaggeration, no hype.</p><p>Browse the <a href='/category/journal/'>Our Tea Mountain</a> column for the latest dispatches.</p>"),
-  "zh": ("# 品牌紀實", "<p>來自哪罕寨的田間手記：茶園四季、採摘時節、初製過程、茶山人，以及日常的茶事與茶器。真實、樸素、紀實，不誇大、不炒作。</p><p>前往<a href='/zh/category/journal/'>茶山紀實</a>欄目查看最新記錄。</p>")},
+  "en": ("# Brand Journal", "<p>Field notes from Nahan: the four seasons of the garden, the picking season, first processing, the people of the mountain, and the quiet everyday rituals of tea. Recorded plainly — no exaggeration, no hype.</p><p>Browse the <a href='/en/category/journal/'>Our Tea Mountain</a> column for the latest dispatches.</p>"),
+  "zh": ("# 品牌紀實", "<p>來自哪罕寨的田間手記：茶園四季、採摘時節、初製過程、茶山人，以及日常的茶事與茶器。真實、樸素、紀實，不誇大、不炒作。</p><p>前往<a href='/category/journal/'>茶山紀實</a>欄目查看最新記錄。</p>")},
  "contact": {
   "en": ("# Contact", "<p>For garden visits, exchange, wholesale and tea-friend conversations, reach us through the channels below. We keep contact details modest so they never interrupt your reading.</p><p><strong>Phone / WeChat:</strong> +86 13888800714<br><strong>Email:</strong> " + CFG["brand"]["email"] + "<br><strong>Location:</strong> Nahan Village, Dajie Township, Jingdong, Pu'er, Yunnan</p><p><button class='cta' onclick='openQR()'>Scan WeChat QR</button></p>"),
   "zh": ("# 聯繫我們", "<p>茶山參觀、交流、商務諮詢與茶友溝通，歡迎透過以下方式聯繫。我們克制地放置聯繫方式，不影響主博客的閱讀體驗。</p><p><strong>電話 / 微信：</strong>+86 13888800714<br><strong>郵箱：</strong>" + CFG["brand"]["email"] + "<br><strong>地址：</strong>雲南省普洱市景東大街鄉哪罕寨</p><p><button class='cta' onclick='openQR()'>掃描微信二維碼</button></p>")}
@@ -398,10 +416,13 @@ def build():
         for c in CFG["categories"]:
             name = c["en"] if lang=="en" else c["zh"]
             sub = c["en_sub"] if lang=="en" else c["zh_sub"]
-            items = [x for x in posts.get(lang,[]) if x["meta"].get("category")==c["id"]]
-            cards = "".join(f'''<a class="post-card" href="{p}/posts/{x['slug']}/"><div class="pc-body">
-<span class="tag">{html.escape(display_cat(x['meta'], lang))}</span><h3>{html.escape(x['meta'].get('title',''))}</h3>
-<p>{html.escape(x['meta'].get('description','')[:100])}…</p></div></a>''' for x in items)
+            vis = visible_posts(posts, lang, c["id"])
+            cards = "".join(
+                f'<a class="post-card" href="{prefix(real)}/posts/{x["slug"]}/"><div class="pc-body">'
+                f'<span class="tag">{lang_badge(real, lang)}{html.escape(display_cat(x["meta"], real))}</span>'
+                f'<h3>{html.escape(x["meta"].get("title",""))}</h3>'
+                f'<p>{html.escape(x["meta"].get("description","")[:100])}…</p></div></a>'
+                for x, real in vis)
             if not cards:
                 cards = '<p class="muted">' + ('Articles in this section are being prepared.' if lang=="en" else '本欄目文章整理中。') + '</p>'
             body = f'<section class="page-head"><div class="eyebrow">Category</div><h1>{name}</h1><p>{sub}</p></section><div class="post-grid">{cards}</div>'
