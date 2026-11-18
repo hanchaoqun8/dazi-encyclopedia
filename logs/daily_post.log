@@ -1,0 +1,13 @@
+[2026-11-18 22:44:27] INFO ===== dazi.uk 全站调度开始（仅智谱） =====
+[2026-11-18 22:44:27] INFO 科普源已刷新：new.dazi.uk/knowledge.html → 474 条
+[2026-11-18 22:44:27] WARN wiki 素材源刷新失败（沿用本地索引）: HTTPError HTTP Error 404: Not Found
+[2026-11-18 22:44:27] INFO 今日任务: wiki, knowledge
+[2026-11-18 22:44:40] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-18 22:45:01] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-18 22:45:01] WARN wiki/zh 第 1 次校验未过：缺 front matter
+[2026-11-18 22:45:29] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-18 22:45:34] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-18 22:45:34] INFO 写入 content/wiki/en/wenden-tea-region.md
+[2026-11-18 22:45:34] INFO 写入 content/wiki/zh/wenden-tea-region.md
+[2026-11-18 22:45:34] INFO 写入 content/knowledge/puer-tea-schools-20261118.json
+[2026-11-18 22:45:34] INFO 完成 3 个文件: wiki/wenden-tea-region (teaware) ← wiki.dazi.uk/shan-dong-wen-deng-cha-qu | knowledge/puer-tea-schools-20261118 ← new.dazi.uk
