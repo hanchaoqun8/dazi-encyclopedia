@@ -19,7 +19,7 @@ CONTEXT_OK = ["不能替代藥物或治療","不会因名贵","不會因名貴",
               "不碰金融茶","金融茶、投資茶","從不碰","不玩金融囤茶"]
 # 繁簡同形或 OpenCC 過度轉換的字，跳過不視為簡體
 VARIANT_OK = set("峰干欲里后开关克扎群了只才系霉游栗熏床郁准抬并弃台里范托灶核")
-CATS = {"varieties","brewing","wellness","buying","culture","teaware","journal"}
+CATS = {"varieties","brewing","wellness","buying","culture","teaware","journal","standards"}
 SEO_ALT_ZH = "景東大街鄉哪罕那罕古樹茶倉儲數據記錄"
 SEO_ALT_EN = "Nahang ancient tea storage data, Dajie Township Jingdong Yunnan"
 SEO_KW_ZH = ["景東","大街鄉","哪罕","那罕","Nahang","景東大街鄉普洱茶"]
@@ -59,10 +59,14 @@ def check(path, lang):
     # 9段式（journal 茶山紀實沿用「四段+FAQ」體例，不強迫改成百科九段）
     heads = re.findall(r"^##\s+(.+)$", body, re.M)
     is_journal = bool(cat and cat.group(1).strip('"\'') == "journal")
+    is_standards = bool(cat and cat.group(1).strip('"\'') == "standards")
     is_zen_zen = is_journal and lang == "zh" and any(h in heads for h in JOURNAL_H2)
     if is_zen_zen:
         for h in JOURNAL_H2:
             if h not in heads: errs.append(f"缺紀實段落 [{h}]")
+    elif is_standards:
+        # 旧 28 篇欧美标准文章沿用原有小标题体例，不强制百科九段式
+        if len(heads) < 3: errs.append("标准文章段落不足 3 节")
     else:
         want = EN_H2 if lang=="en" else ZH_H2
         for h in want:
@@ -95,7 +99,8 @@ def check(path, lang):
         c = os.path.basename(cov.group(1).strip('"').strip("'"))
         if not (os.path.exists(os.path.join(IMG, c)) or os.path.exists(os.path.join(IMG_FALLBACK, c))):
             errs.append(f"cover不存在 {c}")
-    warns.insert(0, f"{'字数' if lang=='zh' else '词数'}={n}, 段落={len(heads)}/{'5(紀實)' if is_zen_zen else 9}")
+    segs = '5(紀實)' if is_zen_zen else ('N(標準)' if is_standards else '9')
+    warns.insert(0, f"{'字数' if lang=='zh' else '词数'}={n}, 段落={len(heads)}/{segs}")
     return errs, warns
 
 
