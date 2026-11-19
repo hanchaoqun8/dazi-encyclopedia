@@ -1,5 +1,5 @@
 {
-  "wiki_count": 6,
+  "wiki_count": 7,
   "used_sources": [
     "https://m.puercp.com/gongxiao/tea_944.html",
     "https://m.puercp.com/wenhua/tea_903.html",
@@ -7,21 +7,22 @@
     "https://m.puercp.com/wenhua/tea_955.html",
     "https://m.puercp.com/gushu/tea_431.html"
   ],
-  "last_run": "2026-11-18",
+  "last_run": "2026-11-19",
   "last_jobs": [
     "wiki",
-    "knowledge"
+    "seo"
   ],
   "last_notes": [
-    "wiki/wenden-tea-region (teaware) ← wiki.dazi.uk/shan-dong-wen-deng-cha-qu",
-    "knowledge/puer-tea-schools-20261118 ← new.dazi.uk"
+    "wiki/junlian-tea (journal) ← wiki.dazi.uk/yun-lian-cha",
+    "seo/nahang-jingdong-dajie-township-pu-erh-tea-storage-data"
   ],
-  "seo_count": 2,
+  "seo_count": 3,
   "used_wiki_sources": [
     "chong-qing-kai-zhou-cha-qu",
     "hu-nan-cha-ling-cha-qu",
     "an-hui-jing-de-cha-qu",
-    "shan-dong-wen-deng-cha-qu"
+    "shan-dong-wen-deng-cha-qu",
+    "yun-lian-cha"
   ],
   "used_knowledge_sources": [
     "https://m.puercp.com/baocun/tea_267.html",

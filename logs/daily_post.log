@@ -11,3 +11,18 @@
 [2026-11-18 22:45:34] INFO 写入 content/wiki/zh/wenden-tea-region.md
 [2026-11-18 22:45:34] INFO 写入 content/knowledge/puer-tea-schools-20261118.json
 [2026-11-18 22:45:34] INFO 完成 3 个文件: wiki/wenden-tea-region (teaware) ← wiki.dazi.uk/shan-dong-wen-deng-cha-qu | knowledge/puer-tea-schools-20261118 ← new.dazi.uk
+[2026-11-19 22:38:49] INFO ===== dazi.uk 全站调度开始（仅智谱） =====
+[2026-11-19 22:38:49] INFO 科普源已刷新：new.dazi.uk/knowledge.html → 474 条
+[2026-11-19 22:38:49] WARN wiki 素材源刷新失败（沿用本地索引）: HTTPError HTTP Error 404: Not Found
+[2026-11-19 22:38:49] INFO 今日任务: wiki, seo
+[2026-11-19 22:39:02] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-19 22:39:19] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-19 22:39:35] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-19 22:39:58] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-19 22:39:58] WARN seo/zh 第 1 次校验未过：缺 front matter
+[2026-11-19 22:40:17] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-19 22:40:17] INFO 写入 content/wiki/en/junlian-tea.md
+[2026-11-19 22:40:17] INFO 写入 content/wiki/zh/junlian-tea.md
+[2026-11-19 22:40:17] INFO 写入 content/en/nahang-jingdong-dajie-township-pu-erh-tea-storage-data.md
+[2026-11-19 22:40:17] INFO 写入 content/zh/nahang-jingdong-dajie-township-pu-erh-tea-storage-data.md
+[2026-11-19 22:40:17] INFO 完成 4 个文件: wiki/junlian-tea (journal) ← wiki.dazi.uk/yun-lian-cha | seo/nahang-jingdong-dajie-township-pu-erh-tea-storage-data
