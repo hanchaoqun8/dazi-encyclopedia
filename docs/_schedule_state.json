@@ -1,5 +1,5 @@
 {
-  "wiki_count": 8,
+  "wiki_count": 9,
   "used_sources": [
     "https://m.puercp.com/gongxiao/tea_944.html",
     "https://m.puercp.com/wenhua/tea_903.html",
@@ -7,14 +7,12 @@
     "https://m.puercp.com/wenhua/tea_955.html",
     "https://m.puercp.com/gushu/tea_431.html"
   ],
-  "last_run": "2026-11-20",
+  "last_run": "2026-11-21",
   "last_jobs": [
-    "wiki",
-    "knowledge"
+    "wiki"
   ],
   "last_notes": [
-    "wiki/lankao-tea-region (varieties) ← wiki.dazi.uk/he-nan-lan-kao-cha-qu",
-    "knowledge/puer-brewing-in-3-seconds-20261120 ← new.dazi.uk"
+    "wiki/cheng-an-tea (brewing) ← wiki.dazi.uk/cheng-an-cha"
   ],
   "seo_count": 3,
   "used_wiki_sources": [
@@ -23,7 +21,8 @@
     "an-hui-jing-de-cha-qu",
     "shan-dong-wen-deng-cha-qu",
     "yun-lian-cha",
-    "he-nan-lan-kao-cha-qu"
+    "he-nan-lan-kao-cha-qu",
+    "cheng-an-cha"
   ],
   "used_knowledge_sources": [
     "https://m.puercp.com/baocun/tea_267.html",
