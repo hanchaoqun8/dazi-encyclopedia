@@ -48,3 +48,14 @@
 [2026-11-21 22:29:11] INFO 写入 content/wiki/en/cheng-an-tea.md
 [2026-11-21 22:29:11] INFO 写入 content/wiki/zh/cheng-an-tea.md
 [2026-11-21 22:29:11] INFO 完成 2 个文件: wiki/cheng-an-tea (brewing) ← wiki.dazi.uk/cheng-an-cha
+[2026-11-22 22:34:15] INFO ===== dazi.uk 全站调度开始（仅智谱） =====
+[2026-11-22 22:34:15] INFO 科普源已刷新：new.dazi.uk/knowledge.html → 474 条
+[2026-11-22 22:34:15] WARN wiki 素材源刷新失败（沿用本地索引）: HTTPError HTTP Error 404: Not Found
+[2026-11-22 22:34:15] INFO 今日任务: wiki
+[2026-11-22 22:34:29] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-22 22:34:47] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-22 22:34:47] WARN wiki/zh 第 1 次校验未过：缺 front matter
+[2026-11-22 22:35:04] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-22 22:35:04] INFO 写入 content/wiki/en/henan-black-tea.md
+[2026-11-22 22:35:04] INFO 写入 content/wiki/zh/henan-black-tea.md
+[2026-11-22 22:35:04] INFO 完成 2 个文件: wiki/henan-black-tea (wellness) ← wiki.dazi.uk/henan-hong-cha
