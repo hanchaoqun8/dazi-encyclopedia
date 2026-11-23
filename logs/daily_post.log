@@ -59,3 +59,18 @@
 [2026-11-22 22:35:04] INFO 写入 content/wiki/en/henan-black-tea.md
 [2026-11-22 22:35:04] INFO 写入 content/wiki/zh/henan-black-tea.md
 [2026-11-22 22:35:04] INFO 完成 2 个文件: wiki/henan-black-tea (wellness) ← wiki.dazi.uk/henan-hong-cha
+[2026-11-23 22:41:46] INFO ===== dazi.uk 全站调度开始（仅智谱） =====
+[2026-11-23 22:41:46] INFO 科普源已刷新：new.dazi.uk/knowledge.html → 474 条
+[2026-11-23 22:41:47] WARN wiki 素材源刷新失败（沿用本地索引）: HTTPError HTTP Error 404: Not Found
+[2026-11-23 22:41:47] INFO 今日任务: wiki, knowledge
+[2026-11-23 22:42:04] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-23 22:42:23] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-23 22:42:23] WARN wiki/zh 第 1 次校验未过：缺 front matter
+[2026-11-23 22:42:42] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-23 22:42:42] WARN wiki/zh 第 2 次校验未过：缺 front matter
+[2026-11-23 22:43:03] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-23 22:43:08] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-23 22:43:08] INFO 写入 content/wiki/en/sui-chuan-gou-gu-nao-tea.md
+[2026-11-23 22:43:08] INFO 写入 content/wiki/zh/sui-chuan-gou-gu-nao-tea.md
+[2026-11-23 22:43:08] INFO 写入 content/knowledge/puer-tea-making-process-20261123.json
+[2026-11-23 22:43:08] INFO 完成 3 个文件: wiki/sui-chuan-gou-gu-nao-tea (buying) ← wiki.dazi.uk/sui-chuan-gou-gu-nao | knowledge/puer-tea-making-process-20261123 ← new.dazi.uk
