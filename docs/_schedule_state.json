@@ -1,5 +1,5 @@
 {
-  "wiki_count": 12,
+  "wiki_count": 13,
   "used_sources": [
     "https://m.puercp.com/gongxiao/tea_944.html",
     "https://m.puercp.com/wenhua/tea_903.html",
@@ -7,14 +7,14 @@
     "https://m.puercp.com/wenhua/tea_955.html",
     "https://m.puercp.com/gushu/tea_431.html"
   ],
-  "last_run": "2026-11-24",
+  "last_run": "2026-11-25",
   "last_jobs": [
     "wiki",
-    "seo"
+    "knowledge"
   ],
   "last_notes": [
-    "wiki/tea-warming-basket (culture) ← wiki.dazi.uk/hong-long",
-    "seo/nahang-jingdong-dajie-tea-garden-ecosystem"
+    "wiki/xilin-nazuo-tea-region (teaware) ← wiki.dazi.uk/xi-lin-na-zuo",
+    "knowledge/jingdong-ancient-tea-storage-20261125 ← new.dazi.uk"
   ],
   "seo_count": 4,
   "used_wiki_sources": [
@@ -27,13 +27,15 @@
     "cheng-an-cha",
     "henan-hong-cha",
     "sui-chuan-gou-gu-nao",
-    "hong-long"
+    "hong-long",
+    "xi-lin-na-zuo"
   ],
   "used_knowledge_sources": [
     "https://m.puercp.com/baocun/tea_267.html",
     "https://m.puercp.com/chadao/tea_441.html",
     "https://m.puercp.com/zhishi/1057.html",
     "https://m.puercp.com/paofa/tea_936.html",
-    "https://m.puercp.com/gongyi/tea_248.html"
+    "https://m.puercp.com/gongyi/tea_248.html",
+    "https://m.puercp.com/gongyi/tea_414.html"
   ]
 }

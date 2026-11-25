@@ -87,3 +87,14 @@
 [2026-11-24 22:47:08] INFO 写入 content/en/nahang-jingdong-dajie-tea-garden-ecosystem.md
 [2026-11-24 22:47:08] INFO 写入 content/zh/nahang-jingdong-dajie-tea-garden-ecosystem.md
 [2026-11-24 22:47:08] INFO 完成 4 个文件: wiki/tea-warming-basket (culture) ← wiki.dazi.uk/hong-long | seo/nahang-jingdong-dajie-tea-garden-ecosystem
+[2026-11-25 22:44:00] INFO ===== dazi.uk 全站调度开始（仅智谱） =====
+[2026-11-25 22:44:01] INFO 科普源已刷新：new.dazi.uk/knowledge.html → 474 条
+[2026-11-25 22:44:01] WARN wiki 素材源刷新失败（沿用本地索引）: HTTPError HTTP Error 404: Not Found
+[2026-11-25 22:44:01] INFO 今日任务: wiki, knowledge
+[2026-11-25 22:44:20] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-25 22:44:46] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-25 22:44:56] INFO 智谱生成成功 model=glm-4-plus
+[2026-11-25 22:44:56] INFO 写入 content/wiki/en/xilin-nazuo-tea-region.md
+[2026-11-25 22:44:56] INFO 写入 content/wiki/zh/xilin-nazuo-tea-region.md
+[2026-11-25 22:44:56] INFO 写入 content/knowledge/jingdong-ancient-tea-storage-20261125.json
+[2026-11-25 22:44:56] INFO 完成 3 个文件: wiki/xilin-nazuo-tea-region (teaware) ← wiki.dazi.uk/xi-lin-na-zuo | knowledge/jingdong-ancient-tea-storage-20261125 ← new.dazi.uk
