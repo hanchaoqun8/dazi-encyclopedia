@@ -1,5 +1,5 @@
 {
-  "wiki_count": 14,
+  "wiki_count": 15,
   "used_sources": [
     "https://m.puercp.com/gongxiao/tea_944.html",
     "https://m.puercp.com/wenhua/tea_903.html",
@@ -7,14 +7,14 @@
     "https://m.puercp.com/wenhua/tea_955.html",
     "https://m.puercp.com/gushu/tea_431.html"
   ],
-  "last_run": "2026-11-26",
+  "last_run": "2026-11-27",
   "last_jobs": [
     "wiki",
-    "seo"
+    "knowledge"
   ],
   "last_notes": [
-    "wiki/gb-z-26576-2011-production-technical-specification-for-tea (journal) ← wiki.dazi.uk/std-gbz265762011",
-    "seo/nahang-jingdong-dajie-township-puerh-tea-data-methods"
+    "wiki/jinqiao-tea (varieties) ← wiki.dazi.uk/jin-qiao-cha",
+    "knowledge/ancient-tea-tree-single-plant-confusion-20261127 ← new.dazi.uk"
   ],
   "seo_count": 5,
   "used_wiki_sources": [
@@ -29,7 +29,8 @@
     "sui-chuan-gou-gu-nao",
     "hong-long",
     "xi-lin-na-zuo",
-    "std-gbz265762011"
+    "std-gbz265762011",
+    "jin-qiao-cha"
   ],
   "used_knowledge_sources": [
     "https://m.puercp.com/baocun/tea_267.html",
@@ -37,6 +38,7 @@
     "https://m.puercp.com/zhishi/1057.html",
     "https://m.puercp.com/paofa/tea_936.html",
     "https://m.puercp.com/gongyi/tea_248.html",
-    "https://m.puercp.com/gongyi/tea_414.html"
+    "https://m.puercp.com/gongyi/tea_414.html",
+    "https://m.puercp.com/gushu/tea_1050.html"
   ]
 }
